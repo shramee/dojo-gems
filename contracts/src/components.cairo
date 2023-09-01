@@ -1,57 +1,71 @@
 use array::ArrayTrait;
 use starknet::ContractAddress;
+use serde::Serde;
+use dojo::SerdeLen;
+// Helper types
 
+type Item = u8;
+
+// Grid column
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
-struct Moves {
+struct Column {
     #[key]
     player: ContractAddress,
-    remaining: u8,
+    #[key]
+    index: u32,
+    packed_u8_types: u128, // Upto 16 (128/8) cells
 }
 
+// Level player is on
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
-struct Position {
+struct Level {
     #[key]
     player: ContractAddress,
-    x: u32,
-    y: u32
+    level_number: u8,
 }
 
-trait PositionTrait {
-    fn is_zero(self: Position) -> bool;
-    fn is_equal(self: Position, b: Position) -> bool;
+// Player's collected assets
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct Assets {
+    #[key]
+    player: ContractAddress,
+    #[key]
+    typ: Item,
+    quantity: u32,
 }
 
-impl PositionImpl of PositionTrait {
-    fn is_zero(self: Position) -> bool {
-        if self.x - self.y == 0 {
-            return true;
-        }
-        false
-    }
-
-    fn is_equal(self: Position, b: Position) -> bool {
-        self.x == b.x && self.y == b.y
+impl TupleSize2SerdeLen<
+    E0, E1, impl E0SerdeLen: SerdeLen<E0>, impl E1SerdeLen: SerdeLen<E1>
+> of SerdeLen<(E0, E1)> {
+    fn len() -> usize {
+        E0SerdeLen::len() + E1SerdeLen::len()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use debug::PrintTrait;
-    use super::{Position, PositionTrait};
-
-    #[test]
-    #[available_gas(100000)]
-    fn test_position_is_zero() {
-        let player = starknet::contract_address_const::<0x0>();
-        assert(PositionTrait::is_zero(Position { player, x: 0, y: 0 }), 'not zero');
+impl TupleSize4SerdeLen<E0, impl E0SerdeLen: SerdeLen<E0>, > of SerdeLen<(E0, E0, E0, E0)> {
+    fn len() -> usize {
+        E0SerdeLen::len() * 4
     }
-
-    #[test]
-    #[available_gas(100000)]
-    fn test_position_is_equal() {
-        let player = starknet::contract_address_const::<0x0>();
-        let position = Position { player, x: 420, y: 0 };
-        position.print();
-        assert(PositionTrait::is_equal(position, Position { player, x: 420, y: 0 }), 'not equal');
+}
+impl TupleSize5SerdeLen<E0, impl E0SerdeLen: SerdeLen<E0>, > of SerdeLen<(E0, E0, E0, E0, E0)> {
+    fn len() -> usize {
+        E0SerdeLen::len() * 5
     }
+}
+
+#[derive(Copy, Drop, Serde, SerdeLen)]
+type ItWt = (Item, u8);
+
+#[derive(Copy, Drop, Serde, SerdeLen)]
+type IQty = (Item, u8);
+
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct LevelDefinition {
+    #[key]
+    number: u8, // Level number
+    grid_size: u8, // Size of grid square
+    // Spawn up to 5 types of items and spawn probability
+    spawnsItems: (ItWt, ItWt, ItWt, ItWt),
+    // Upto 4 types of gems and quantities to collect to clear
+    clearReqs: (IQty, IQty, IQty, IQty),
 }

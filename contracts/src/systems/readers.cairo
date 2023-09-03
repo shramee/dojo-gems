@@ -34,8 +34,16 @@ mod get_player_grid {
         let level_data = get_level_data(level.level_number);
 
         let mut columns = ArrayTrait::new();
-
-        columns.append(get!(ctx.world, player, Column).packed_u8_items);
+        let mut i: felt252 = 0;
+        let grid_size: felt252 = level_data.grid_size.into();
+        loop {
+            if i == grid_size {
+                break;
+            }
+            columns
+                .append(get!(ctx.world, array![player.into(), i].span(), Column).packed_u8_items);
+            i += 1;
+        };
 
         columns
     }

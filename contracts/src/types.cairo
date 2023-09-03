@@ -11,3 +11,11 @@ struct LevelData {
     spawn_types: Array<ItWt>,
     clear_requirement: Array<IQty>,
 }
+
+#[derive(Copy, Drop, Serde)]
+enum Direction {
+    Up: (),
+    Down: (),
+    Left: (),
+    Right: (),
+}

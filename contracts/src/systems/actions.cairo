@@ -4,21 +4,16 @@ mod swap {
     use box::BoxTrait;
     use traits::{Into, TryInto};
     use option::OptionTrait;
+    use dojo_gems::types::{LevelData, Direction};
     use dojo::world::Context;
 
-    // so we don't go negative
-
-    fn execute(ctx: Context) {
-        // set!(
-        //     ctx.world,
-        //     (
-        //         Moves {
-        //             player: ctx.origin, remaining: 100
-        //             }, Position {
-        //             player: ctx.origin, x: offset, y: offset
-        //         },
-        //     )
-        // );
+    fn execute(ctx: Context, row_index: u8, col_index: u8, direction: Direction) {
+        match direction {
+            Direction::Up => {},
+            Direction::Down => {},
+            Direction::Left => {},
+            Direction::Right => {},
+        };
         return ();
     }
 }

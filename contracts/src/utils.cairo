@@ -1,7 +1,7 @@
 use integer::{u128s_from_felt252, U128sFromFelt252Result};
 use dojo_gems::types::{LevelData};
 use starknet::ContractAddress;
-use array::{ArrayTrait, Array};
+use array::{ArrayTrait, SpanTrait, Array};
 use core::traits::{Into, TryInto};
 use option::OptionTrait;
 use serde::Serde;
@@ -21,6 +21,24 @@ fn get_level_data(number: u8) -> LevelData {
 fn get_player_level(world: IWorldDispatcher, player: ContractAddress) -> LevelData {
     let number = *world.entity('Level', (array![player.into()]).span(), 0, 1)[0];
     get_level_data((number).try_into().unwrap())
+}
+
+fn get_player_grid(world: IWorldDispatcher, player: ContractAddress) -> Array<u128> {
+    let level_data = get_player_level(world, player);
+    let mut columns = ArrayTrait::new();
+    let mut i: felt252 = 0;
+    let grid_size: felt252 = level_data.grid_size.into();
+    loop {
+        if i == grid_size {
+            break;
+        }
+        let col = world.entity('Column', (array![player.into(), i]).span(), 0, 1);
+
+        columns.append((*col[0]).try_into().unwrap());
+        i += 1;
+    };
+
+    columns
 }
 
 // Generates an array of spawn items by probability

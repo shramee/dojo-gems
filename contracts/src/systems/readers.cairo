@@ -26,24 +26,10 @@ mod get_player_grid {
 
     use dojo_gems::components::{Level, Column,};
     use dojo_gems::types::{Item, LevelData};
-    use dojo_gems::utils::get_player_level;
+    use dojo_gems::utils::get_player_grid;
 
     fn execute(ctx: Context, player: ContractAddress) -> Array<u128> {
-        let level_data = get_player_level(ctx.world, player);
-
-        let mut columns = ArrayTrait::new();
-        let mut i: felt252 = 0;
-        let grid_size: felt252 = level_data.grid_size.into();
-        loop {
-            if i == grid_size {
-                break;
-            }
-            columns
-                .append(get!(ctx.world, array![player.into(), i].span(), Column).packed_u8_items);
-            i += 1;
-        };
-
-        columns
+        get_player_grid(ctx.world, player)
     }
 }
 

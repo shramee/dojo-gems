@@ -1,5 +1,5 @@
 use integer::{u128s_from_felt252, U128sFromFelt252Result};
-use dojo_gems::types::{LevelData};
+use dojo_gems::types::{LevelData, Direction};
 use starknet::ContractAddress;
 use array::{ArrayTrait, SpanTrait, Array};
 use core::traits::{Into, TryInto};
@@ -23,6 +23,11 @@ fn get_player_level(world: IWorldDispatcher, player: ContractAddress) -> LevelDa
     get_level_data((number).try_into().unwrap())
 }
 
+fn get_player_column(world: IWorldDispatcher, player: ContractAddress, i: felt252) -> u128 {
+    let col = world.entity('Column', (array![player.into(), i]).span(), 0, 1);
+    (*col[0]).try_into().unwrap()
+}
+
 fn get_player_grid(world: IWorldDispatcher, player: ContractAddress) -> Array<u128> {
     let level_data = get_player_level(world, player);
     let mut columns = ArrayTrait::new();
@@ -34,7 +39,7 @@ fn get_player_grid(world: IWorldDispatcher, player: ContractAddress) -> Array<u1
         }
         let col = world.entity('Column', (array![player.into(), i]).span(), 0, 1);
 
-        columns.append((*col[0]).try_into().unwrap());
+        columns.append(get_player_column(world, player, i));
         i += 1;
     };
 
@@ -109,7 +114,8 @@ fn generate_columns(
     column
 }
 
-fn pow(base: u128, mut expo: u32) -> u128 {
+fn pow(base: u128, expo: felt252) -> u128 {
+    let mut expo: u32 = expo.try_into().unwrap();
     let mut res = 1;
     loop {
         if expo == 0 {
@@ -123,7 +129,7 @@ fn pow(base: u128, mut expo: u32) -> u128 {
 
 // Converts a set of column u128s into a row u128 from row index
 fn row_from_columns(mut columns: @Array<u128>, row_index: u32) -> u128 {
-    let offset = pow(256, row_index);
+    let offset = pow(256, row_index.into());
     let mut row = ((*columns[0]) / offset) % 256;
 
     let mut i = 1; // First already added
@@ -181,10 +187,45 @@ fn column_matches(mut column: u128,) -> (u32, u32) {
     (match_start, match_finish)
 }
 
+fn vert_swap_up(column: u128, i: u128) -> u128 {
+    let pre_offset = pow(256, i.into());
+    let mut pre_items = column % pre_offset;
+    let post_offset = pow(256, i.into() + 2);
+    let mut post_items = column / post_offset;
+
+    let offset_1 = pow(256, i.into());
+    let i1 = column / offset_1 % 256;
+    let offset_2 = pow(256, i.into() + 1);
+    let i2 = column / offset_2 % 256;
+    post_items * post_offset + i1 * offset_2 + i2 * offset_1 + pre_items
+}
+
+fn swap_grid(ctx: Context, row_index: u128, col_index: u128, direction: Direction) {
+    let column = get_player_column(ctx.world, ctx.origin, col_index.into());
+
+    match direction {
+        Direction::Up => {
+            let new_col = vert_swap_up(column, row_index.into());
+            set!(ctx.world, new_col);
+        },
+        Direction::Down => {
+            let new_col = vert_swap_up(column, row_index.into() + 1);
+            set!(ctx.world, new_col);
+        },
+        Direction::Left => { //
+        // @TODO
+        },
+        Direction::Right => { //
+        // @TODO
+        },
+    };
+}
+
 #[cfg(test)]
 mod test {
     use super::{
-        probabilistic_spawn_items_array, generate_columns, column_matches, row_from_columns
+        probabilistic_spawn_items_array, generate_columns, column_matches, row_from_columns,
+        vert_swap_up
     };
     use array::ArrayTrait;
     use starknet::{contract_address_const};
@@ -242,5 +283,12 @@ mod test {
         let cols = array![0x2030401, 0x2020303, 0x3040401, 0x5030504];
         let row = row_from_columns(@cols, 3);
         assert(row == 0x2020305, 'incorrect row');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_vert_swap() {
+        let swapped = vert_swap_up(0x102030405, 2);
+        assert(swapped == 0x103020405, '');
     }
 }

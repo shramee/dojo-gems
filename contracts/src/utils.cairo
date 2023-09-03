@@ -101,8 +101,6 @@ fn pow(base: u128, mut expo: u32) -> u128 {
 fn row_from_columns(mut columns: @Array<u128>, row_index: u32) -> u128 {
     let offset = pow(256, row_index);
     let mut row = ((*columns[0]) / offset) % 256;
-    (*columns[0]).print();
-    (*columns[0] / offset).print();
 
     let mut i = 1; // First already added
     loop {

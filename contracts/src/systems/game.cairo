@@ -10,11 +10,7 @@ mod start_game {
 
     use dojo_gems::components::{Level, Column, };
     use dojo_gems::types::{Item, LevelData};
-    use dojo_gems::utils::{get_level_data, probabilistic_spawn_items_array};
-
-    fn generate_row(level: @LevelData) -> u128 {
-        0xf00dee
-    }
+    use dojo_gems::utils::{get_level_data, probabilistic_spawn_items_array, generate_row};
 
     fn execute(ctx: Context) {
         // Player level number (@TODO multilevel later)
@@ -36,7 +32,9 @@ mod start_game {
             if level.grid_size == index {
                 break;
             };
-            set!(ctx.world, Column { player, index, packed_u8_items: generate_row(@level) });
+            let salt: u32 = index.into() * 256 + level_number.into();
+            let packed_u8_items = generate_row(level.grid_size, @spawn_array, player, salt.into());
+            set!(ctx.world, Column { player, index, packed_u8_items });
             index += 1;
         };
 
@@ -65,9 +63,14 @@ mod tests {
         let start_res = world.execute('start_game', array![]);
 
         let col_0 = *world.entity('Column', (array![player.into(), 0]).span(), 0, 1)[0];
+        let col_1 = *world.entity('Column', (array![player.into(), 1]).span(), 0, 1)[0];
+        let col_2 = *world.entity('Column', (array![player.into(), 2]).span(), 0, 1)[0];
+        let col_3 = *world.entity('Column', (array![player.into(), 3]).span(), 0, 1)[0];
         let col_4 = *world.entity('Column', (array![player.into(), 4]).span(), 0, 1)[0];
-
         assert(col_0.try_into().unwrap() > 0_u128, 'column items empty');
+        assert(col_1.try_into().unwrap() > 0_u128, 'column items empty');
+        assert(col_2.try_into().unwrap() > 0_u128, 'column items empty');
+        assert(col_3.try_into().unwrap() > 0_u128, 'column items empty');
         assert(col_4.try_into().unwrap() > 0_u128, 'column items empty');
     }
 }

@@ -1,5 +1,6 @@
 use integer::{u128s_from_felt252, U128sFromFelt252Result};
 use dojo_gems::types::{LevelData, Direction};
+use dojo_gems::components::{Column};
 use starknet::ContractAddress;
 use array::{ArrayTrait, SpanTrait, Array};
 use core::traits::{Into, TryInto};
@@ -26,6 +27,12 @@ fn get_player_level(world: IWorldDispatcher, player: ContractAddress) -> LevelDa
 fn get_player_column(world: IWorldDispatcher, player: ContractAddress, i: felt252) -> u128 {
     let col = world.entity('Column', (array![player.into(), i]).span(), 0, 1);
     (*col[0]).try_into().unwrap()
+}
+
+fn set_player_column(ctx: Context, player: ContractAddress, index: felt252, packed_u8_items: u128) {
+    set!(
+        ctx.world, Column { player: ctx.origin, index: index.try_into().unwrap(), packed_u8_items }
+    );
 }
 
 fn get_player_grid(world: IWorldDispatcher, player: ContractAddress) -> Array<u128> {
@@ -200,33 +207,57 @@ fn vertical_swap_up(column: u128, i: u128) -> u128 {
     post_items * post_offset + i1 * offset_2 + i2 * offset_1 + pre_items
 }
 
-fn swap_grid(ctx: Context, row_index: u128, col_index: u128, direction: Direction) {
-    let column = get_player_column(ctx.world, ctx.origin, col_index.into());
+fn horizontal_swap(cols: (u128, u128), i: u128) -> (u128, u128) {
+    let (col1, col2) = cols;
+    let pre_offset = pow(256, i.into());
+    let post_offset = pow(256, i.into() + 1);
+    let i_offset = pow(256, i.into());
+
+    let mut pre_items1 = col1 % pre_offset;
+    let mut post_items1 = col1 / post_offset;
+    let mut pre_items2 = col2 % pre_offset;
+    let mut post_items2 = col2 / post_offset;
+
+    let i1 = col1 / i_offset % 256;
+    let i2 = col2 / i_offset % 256;
+    (
+        post_items1 * post_offset + i1 * i_offset + pre_items1,
+        post_items2 * post_offset + i2 * i_offset + pre_items2
+    )
+}
+
+fn swap_grid(ctx: Context, row_index: u128, index: u128, direction: Direction) {
+    let column = get_player_column(ctx.world, ctx.origin, index.into());
+    let player = ctx.origin;
+    let mut items = 0_u128;
 
     match direction {
         Direction::Up => {
-            let new_col = vertical_swap_up(column, row_index.into());
-            set!(ctx.world, new_col);
+            items = vertical_swap_up(column, row_index.into());
         },
         Direction::Down => {
-            let new_col = vertical_swap_up(column, row_index.into() + 1);
-            set!(ctx.world, new_col);
+            items = vertical_swap_up(column, row_index.into() + 1);
         },
-        Direction::Left => { //
-        // @TODO
+        Direction::Left => {
+            let column2 = get_player_column(ctx.world, ctx.origin, index.into() - 1);
+            let (items, items2) = horizontal_swap((column, column2), 3);
+            set_player_column(ctx, player, index.into() - 1, items2);
         },
-        Direction::Right => { //
-        // @TODO
+        Direction::Right => {
+            let column2 = get_player_column(ctx.world, ctx.origin, index.into() + 1);
+            let (items, items2) = horizontal_swap((column, column2), 3);
+            set_player_column(ctx, player, index.into() + 1, items2);
         },
     };
+    set_player_column(ctx, player, index.into(), items);
 }
 
 #[cfg(test)]
 mod test {
     use super::{
         probabilistic_spawn_items_array, generate_columns, column_matches, row_from_columns,
-        vertical_swap_up
     };
+    use super::{vertical_swap_up, horizontal_swap};
     use array::ArrayTrait;
     use starknet::{contract_address_const};
     use debug::PrintTrait;
@@ -287,8 +318,16 @@ mod test {
 
     #[test]
     #[available_gas(2000000)]
-    fn test_vert_swap() {
+    fn test_vertical_swap() {
         let swapped = vertical_swap_up(0x102030405, 2);
-        assert(swapped == 0x103020405, '');
+        assert(swapped == 0x103020405, 'swap incorrect');
+    }
+
+    fn test_horizontal_swap() {
+        let (c1, c2) = horizontal_swap((0x102030405, 0x607080910), 3);
+        c1.print();
+        c2.print();
+        assert(c1 == 0x107030405, 'swap incorrect');
+        assert(c2 == 0x602080910, 'swap incorrect');
     }
 }

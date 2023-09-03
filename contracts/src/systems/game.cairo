@@ -8,9 +8,9 @@ mod start_game {
     use option::OptionTrait;
     use dojo::world::Context;
 
-    use dojo_gems::components::{Level, Column, };
+    use dojo_gems::components::{Level, Column,};
     use dojo_gems::types::{Item, LevelData};
-    use dojo_gems::utils::{get_level_data, probabilistic_spawn_items_array, generate_row};
+    use dojo_gems::utils::{get_level_data, probabilistic_spawn_items_array, generate_columns};
 
     fn execute(ctx: Context) {
         // Player level number (@TODO multilevel later)
@@ -33,7 +33,9 @@ mod start_game {
                 break;
             };
             let salt: u32 = index.into() * 256 + level_number.into();
-            let packed_u8_items = generate_row(level.grid_size, @spawn_array, player, salt.into());
+            let packed_u8_items = generate_columns(
+                level.grid_size, @spawn_array, player, salt.into()
+            );
             set!(ctx.world, Column { player, index, packed_u8_items });
             index += 1;
         };

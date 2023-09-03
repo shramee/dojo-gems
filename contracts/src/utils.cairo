@@ -6,6 +6,7 @@ use core::traits::{Into, TryInto};
 use option::OptionTrait;
 use serde::Serde;
 use debug::PrintTrait;
+use dojo::world::{Context, IWorldDispatcher, IWorldDispatcherTrait};
 
 // Just one level for now
 fn get_level_data(number: u8) -> LevelData {
@@ -15,6 +16,11 @@ fn get_level_data(number: u8) -> LevelData {
         clear_requirement: array![(1, 10)],
         spawn_types: array![(1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1)],
     };
+}
+
+fn get_player_level(world: IWorldDispatcher, player: ContractAddress) -> LevelData {
+    let number = *world.entity('Level', (array![player.into()]).span(), 0, 1)[0];
+    get_level_data((number).try_into().unwrap())
 }
 
 // Generates an array of spawn items by probability

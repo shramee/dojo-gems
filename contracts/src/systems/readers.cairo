@@ -9,11 +9,10 @@ mod get_player_level {
 
     use dojo_gems::components::{Level, Column,};
     use dojo_gems::types::{Item, LevelData};
-    use dojo_gems::utils::get_level_data;
+    use dojo_gems::utils::get_player_level;
 
     fn execute(ctx: Context, player: ContractAddress) -> LevelData {
-        let level = get!(ctx.world, player, Level);
-        get_level_data(level.level_number)
+        get_player_level(ctx.world, player)
     }
 }
 #[system]
@@ -27,11 +26,10 @@ mod get_player_grid {
 
     use dojo_gems::components::{Level, Column,};
     use dojo_gems::types::{Item, LevelData};
-    use dojo_gems::utils::get_level_data;
+    use dojo_gems::utils::get_player_level;
 
     fn execute(ctx: Context, player: ContractAddress) -> Array<u128> {
-        let level = get!(ctx.world, player, Level);
-        let level_data = get_level_data(level.level_number);
+        let level_data = get_player_level(ctx.world, player);
 
         let mut columns = ArrayTrait::new();
         let mut i: felt252 = 0;
@@ -67,7 +65,6 @@ mod tests {
         let world = setup_world();
         world.execute('start_game', array![]);
         let mut level_ser = world.execute('get_player_level', array![0x0]);
-
         let level = Serde::<LevelData>::deserialize(ref level_ser).unwrap();
 
         assert(level.number == 1, 'level number be 1');

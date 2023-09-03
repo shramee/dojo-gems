@@ -85,7 +85,43 @@ fn generate_columns(
     column
 }
 
-fn columns_matches(mut column: u128,) -> (u32, u32) {
+fn pow(base: u128, mut expo: u32) -> u128 {
+    let mut res = 1;
+    loop {
+        if expo == 0 {
+            break;
+        };
+        res = res * base;
+        expo -= 1;
+    };
+    res
+}
+
+// Converts a set of column u128s into a row u128 from row index
+fn row_from_columns(mut columns: @Array<u128>, row_index: u32) -> u128 {
+    let offset = pow(256, row_index);
+    let mut row = ((*columns[0]) / offset) % 256;
+    (*columns[0]).print();
+    (*columns[0] / offset).print();
+
+    let mut i = 1; // First already added
+    loop {
+        if i == columns.len() {
+            break;
+        };
+        let item = (*columns[i]) / offset % 256;
+        row = row * 256 + item;
+        i += 1;
+    };
+    row
+}
+
+fn row_matches(mut columns: @Array<u128>, row_index: u32) -> (u32, u32) {
+    let column = row_from_columns(columns, row_index);
+    column_matches(column)
+}
+
+fn column_matches(mut column: u128,) -> (u32, u32) {
     let mut prev2 = column % 256;
     column = column / 256;
     let mut prev = column % 256;
@@ -125,7 +161,9 @@ fn columns_matches(mut column: u128,) -> (u32, u32) {
 
 #[cfg(test)]
 mod test {
-    use super::{probabilistic_spawn_items_array, generate_columns, columns_matches};
+    use super::{
+        probabilistic_spawn_items_array, generate_columns, column_matches, row_from_columns
+    };
     use array::ArrayTrait;
     use starknet::{contract_address_const};
     use debug::PrintTrait;
@@ -159,20 +197,28 @@ mod test {
 
     #[test]
     #[available_gas(2000000)]
-    fn test_match_columns() {
+    fn test_column_matches() {
         // 3 match 4 - 6
-        let (s, f) = columns_matches(0x403030306020201);
+        let (s, f) = column_matches(0x403030306020201);
         assert(s == 4, 'incorrect start');
         assert(f == 6, 'incorrect finish');
 
         // 4 match 0 - 3
-        let (s, f) = columns_matches(0x403030602020202);
+        let (s, f) = column_matches(0x403030602020202);
         assert(s == 0, 'incorrect start');
         assert(f == 3, 'incorrect finish');
 
         // No match
-        let (s, f) = columns_matches(0x506020030303201);
+        let (s, f) = column_matches(0x506020030303201);
         assert(s == 0, 'incorrect start');
         assert(f == 0, 'incorrect finish');
+    }
+
+    #[test]
+    #[available_gas(20000000)]
+    fn test_row_from_columns() {
+        let cols = array![0x2030401, 0x2020303, 0x3040401, 0x5030504];
+        let row = row_from_columns(@cols, 3);
+        assert(row == 0x2020305, 'incorrect row');
     }
 }

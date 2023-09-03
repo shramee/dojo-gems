@@ -16,7 +16,7 @@ mod start_game {
         0xf00dee
     }
 
-    fn execute(ctx: Context) -> Level {
+    fn execute(ctx: Context) {
         // Player level number (@TODO multilevel later)
         let level_number = 1;
         let player = ctx.origin;
@@ -33,12 +33,11 @@ mod start_game {
             if level.grid_size == index {
                 break;
             };
-            index += 1;
             set!(ctx.world, Column { player, index, packed_u8_items: generate_row(@level) });
+            index += 1;
         };
 
         set!(ctx.world, (player_level));
-        return player_level;
     }
 }
 
@@ -49,15 +48,23 @@ mod tests {
     use traits::{Into, TryInto};
     use option::OptionTrait;
     use dojo_gems::test_utils::setup_world;
+    use dojo_gems::types::LevelData;
+    use dojo_gems::components::{Column};
     use dojo::world::IWorldDispatcherTrait;
+    use starknet::get_caller_address;
     use debug::PrintTrait;
 
     #[test]
     #[available_gas(30000000)]
     fn test_start_game() {
+        let player = get_caller_address();
         let world = setup_world();
         let start_res = world.execute('start_game', array![]);
 
-        start_res.len().print();
+        let col_0 = *world.entity('Column', (array![player.into(), 0]).span(), 0, 1)[0];
+        let col_4 = *world.entity('Column', (array![player.into(), 4]).span(), 0, 1)[0];
+
+        assert(col_0.try_into().unwrap() > 0_u128, 'column items empty');
+        assert(col_4.try_into().unwrap() > 0_u128, 'column items empty');
     }
 }

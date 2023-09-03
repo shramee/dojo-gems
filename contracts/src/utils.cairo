@@ -85,19 +85,47 @@ fn generate_columns(
     column
 }
 
-// Just one level for now
-fn get_level_data(number: u8) -> LevelData {
-    return LevelData {
-        number,
-        grid_size: 6,
-        clear_requirement: array![(1, 10)],
-        spawn_types: array![(1, 1), (2, 1), (3, 1), (4, 1)],
+fn columns_matches(mut column: u128,) -> (u32, u32) {
+    let mut prev2 = column % 256;
+    column = column / 256;
+    let mut prev = column % 256;
+    let mut i = 2;
+    let mut match_start = 0xff;
+    let mut match_finish = 0;
+
+    loop {
+        if column < 256 {
+            break ();
+        }
+        column = column / 256;
+        let current = column % 256;
+
+        if current == prev && prev == prev2 {
+            if match_start == 0xff {
+                match_start = i - 2;
+            }
+        } else {
+            if match_start != 0xff {
+                match_finish = i - 1; // Set previous index as end
+
+                break ();
+            }
+        }
+
+        prev2 = prev;
+        prev = current;
+        i = i + 1;
     };
+    if match_start == 0xff {
+        match_start = 0;
+    }
+
+    (match_start, match_finish)
 }
 
 #[cfg(test)]
 mod test {
-    use super::{probabilistic_spawn_items_array, generate_row};
+    use super::{probabilistic_spawn_items_array, generate_columns, columns_matches};
     use array::ArrayTrait;
     use starknet::{contract_address_const};
     use debug::PrintTrait;
@@ -127,5 +155,24 @@ mod test {
         );
         // Should be of size 5 * 8 bytes, i.e. > 2 ^ 8 ^ 4
         assert(packed_u8_items > 0x0100000000, 'should pack 5 u8s');
+    }
+
+    #[test]
+    #[available_gas(2000000)]
+    fn test_match_columns() {
+        // 3 match 4 - 6
+        let (s, f) = columns_matches(0x403030306020201);
+        assert(s == 4, 'incorrect start');
+        assert(f == 6, 'incorrect finish');
+
+        // 4 match 0 - 3
+        let (s, f) = columns_matches(0x403030602020202);
+        assert(s == 0, 'incorrect start');
+        assert(f == 3, 'incorrect finish');
+
+        // No match
+        let (s, f) = columns_matches(0x506020030303201);
+        assert(s == 0, 'incorrect start');
+        assert(f == 0, 'incorrect finish');
     }
 }

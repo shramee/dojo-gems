@@ -187,7 +187,7 @@ fn column_matches(mut column: u128,) -> (u32, u32) {
     (match_start, match_finish)
 }
 
-fn vert_swap_up(column: u128, i: u128) -> u128 {
+fn vertical_swap_up(column: u128, i: u128) -> u128 {
     let pre_offset = pow(256, i.into());
     let mut pre_items = column % pre_offset;
     let post_offset = pow(256, i.into() + 2);
@@ -205,11 +205,11 @@ fn swap_grid(ctx: Context, row_index: u128, col_index: u128, direction: Directio
 
     match direction {
         Direction::Up => {
-            let new_col = vert_swap_up(column, row_index.into());
+            let new_col = vertical_swap_up(column, row_index.into());
             set!(ctx.world, new_col);
         },
         Direction::Down => {
-            let new_col = vert_swap_up(column, row_index.into() + 1);
+            let new_col = vertical_swap_up(column, row_index.into() + 1);
             set!(ctx.world, new_col);
         },
         Direction::Left => { //
@@ -225,7 +225,7 @@ fn swap_grid(ctx: Context, row_index: u128, col_index: u128, direction: Directio
 mod test {
     use super::{
         probabilistic_spawn_items_array, generate_columns, column_matches, row_from_columns,
-        vert_swap_up
+        vertical_swap_up
     };
     use array::ArrayTrait;
     use starknet::{contract_address_const};
@@ -288,7 +288,7 @@ mod test {
     #[test]
     #[available_gas(2000000)]
     fn test_vert_swap() {
-        let swapped = vert_swap_up(0x102030405, 2);
+        let swapped = vertical_swap_up(0x102030405, 2);
         assert(swapped == 0x103020405, '');
     }
 }

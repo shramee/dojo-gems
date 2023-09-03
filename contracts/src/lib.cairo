@@ -1,6 +1,7 @@
 mod components;
 mod systems {
     mod game;
+    mod actions;
     mod readers;
 }
 mod constants;

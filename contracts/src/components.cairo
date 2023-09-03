@@ -2,9 +2,7 @@ use array::ArrayTrait;
 use starknet::ContractAddress;
 use serde::Serde;
 use dojo::SerdeLen;
-// Helper types
-
-type Item = u8;
+use dojo_gems::types::Item;
 
 // Grid column
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
@@ -12,8 +10,8 @@ struct Column {
     #[key]
     player: ContractAddress,
     #[key]
-    index: u32,
-    packed_u8_types: u128, // Upto 16 (128/8) cells
+    index: u8,
+    packed_u8_items: u128, // Upto 16 (128/8) cells
 }
 
 // Level player is on
@@ -53,19 +51,3 @@ impl TupleSize5SerdeLen<E0, impl E0SerdeLen: SerdeLen<E0>, > of SerdeLen<(E0, E0
     }
 }
 
-#[derive(Copy, Drop, Serde, SerdeLen)]
-type ItWt = (Item, u8);
-
-#[derive(Copy, Drop, Serde, SerdeLen)]
-type IQty = (Item, u8);
-
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
-struct LevelDefinition {
-    #[key]
-    number: u8, // Level number
-    grid_size: u8, // Size of grid square
-    // Spawn up to 5 types of items and spawn probability
-    spawnsItems: (ItWt, ItWt, ItWt, ItWt),
-    // Upto 4 types of gems and quantities to collect to clear
-    clearReqs: (IQty, IQty, IQty, IQty),
-}

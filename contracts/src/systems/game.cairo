@@ -10,7 +10,7 @@ mod start_game {
 
     use dojo_gems::components::{Level, Column, };
     use dojo_gems::types::{Item, LevelData};
-    use dojo_gems::utils::get_level_data;
+    use dojo_gems::utils::{get_level_data, probabilistic_spawn_items_array};
 
     fn generate_row(level: @LevelData) -> u128 {
         0xf00dee
@@ -27,6 +27,9 @@ mod start_game {
         let level = get_level_data(level_number);
 
         let mut index = 0;
+
+        // generate weighted spawn array
+        let spawn_array = probabilistic_spawn_items_array(@level.spawn_types);
 
         // generate grid columns
         loop {
